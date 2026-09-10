@@ -1,0 +1,144 @@
+<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"><base target="_top"><style>
+:root{--orange:#ff8a00;--green:#146b3a;--cream:#fff8e9;--ink:#30251c}*{box-sizing:border-box}body{margin:0;font-family:Arial,'Noto Sans Thai',sans-serif;background:linear-gradient(180deg,#ff9a18,#fff2cf);color:var(--ink);min-height:100vh}.wrap{max-width:520px;margin:auto;padding:22px}.card{background:#fffdf7;border-radius:28px;padding:24px;box-shadow:0 14px 35px #8b4a0030}.cat{text-align:center}.cat:empty{display:none}.cat:not(:empty){font-size:74px}.tag{display:inline-block;background:var(--green);color:white;padding:7px 14px;border-radius:999px;font-weight:800}.title{font-size:30px;font-weight:900;margin:12px 0 5px}.sub{opacity:.7;margin-bottom:20px}.field{margin:12px 0}.field label{font-weight:700;display:block;margin-bottom:6px}.field input{width:100%;padding:14px;border:2px solid #ead8bd;border-radius:14px;font-size:16px}.btn{width:100%;border:0;background:var(--orange);color:#fff;font-size:18px;font-weight:900;padding:16px;border-radius:16px;margin-top:12px;cursor:pointer}.progress{height:15px;background:#eee1cc;border-radius:20px;overflow:hidden;margin:15px 0}.bar{height:100%;background:var(--green);width:0}.msg{margin-top:18px;padding:16px;border-radius:16px;background:var(--cream);display:none}.small{font-size:12px;opacity:.65;margin-top:14px;text-align:center}.full-view{position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(15,23,42,0.95);backdrop-filter:blur(10px);z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}.full-view.active{display:flex;animation:fadeIn .25s ease}.full-view img{max-width:100%;max-height:86vh;width:auto;height:auto;object-fit:contain;border-radius:22px;box-shadow:0 20px 50px rgba(0,0,0,0.6);cursor:pointer}.full-view-bar{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.96);backdrop-filter:blur(12px);padding:10px 22px;border-radius:999px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 35px rgba(0,0,0,0.35);z-index:100000;width:max-content;max-width:92%}.full-view-info{font-size:14px;color:var(--ink);font-weight:500}.full-view-info b{color:var(--orange)}.full-view-btn{background:var(--green);color:#fff;border:none;padding:7px 16px;border-radius:999px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}</style></head><body><div id="fullView" class="full-view" onclick="toggleFullView(false)"><img id="fullViewImg" src="" alt="Cat Poster" onclick="event.stopPropagation()"><div class="full-view-bar" onclick="event.stopPropagation()"><div class="full-view-info"><span id="fullViewTitle"></span> • <span id="fullViewProgress"></span></div><button type="button" class="full-view-btn" onclick="toggleFullView(false)">ย่อลง ✕</button></div></div><div class="wrap"><div class="card"><div class="cat">🐈</div><span class="tag" id="catTag">สแกนหาแมว</span><div class="title">จับแมวส้มได้แล้ว! 🧡</div><div class="sub">ลงทะเบียนครั้งแรก แล้วครั้งต่อไปมือถือจะจำให้เอง</div><div class="field"><label>รหัสพนักงาน</label><input id="employeeId" type="text" autocomplete="off"></div><div class="field"><label>ชื่อ-นามสกุล</label><input id="name"></div><div class="field"><label>แผนก / หน่วยงาน</label><input id="department"></div><button class="btn" id="submitBtn" onclick="submitScan()">เก็บ แมวตัวนี้ 🐾</button><div class="progress"><div class="bar" id="bar"></div></div><div id="progressText">ความคืบหน้า 0/10</div><div class="msg" id="msg"></div><div class="small">ระบบบันทึกเวลาสแกนตามเวลาไทย • สแกนตัวเดิมซ้ำไม่นับเพิ่ม</div></div></div><script>
+const urlParams = new URLSearchParams(window.location.search);
+const TOKEN = urlParams.get('t') || '';
+const CAT = '';
+['employeeId', 'name', 'department'].forEach(k => {
+    document.getElementById(k).value = localStorage.getItem('tvop_' + k) || '';
+});
+window.onload = () => {
+    if (document.getElementById('employeeId').value) loadProgress();
+};
+
+async function loadProgress() {
+    try {
+        const employeeId = document.getElementById('employeeId').value;
+        const response = await fetch('/api/progress/' + employeeId);
+        if (response.ok) {
+            const r = await response.json();
+            showProgress(r);
+        }
+    } catch (e) {
+        console.error('Failed to load progress', e);
+    }
+}
+
+function showProgress(r) {
+    document.getElementById('bar').style.width = (r.count * 10) + '%';
+    document.getElementById('progressText').textContent = 'ความคืบหน้า ' + r.count + '/10' + (r.completed ? ' 🎉 MISSION COMPLETE!' : '');
+}
+
+function toggleFullView(show) {
+    const el = document.getElementById('fullView');
+    if (!el) return;
+    if (show) {
+        el.classList.add('active');
+    } else {
+        el.classList.remove('active');
+    }
+}
+
+function showFullView(src, title, count, completed) {
+    const el = document.getElementById('fullView');
+    const img = document.getElementById('fullViewImg');
+    const titleEl = document.getElementById('fullViewTitle');
+    const progEl = document.getElementById('fullViewProgress');
+    if (!el || !img) return;
+
+    img.src = src;
+    if (titleEl) titleEl.innerHTML = '✅ เจอ <b>' + (title || 'แมวส้ม') + '</b> แล้ว!';
+    if (progEl) progEl.innerHTML = 'ความคืบหน้า <b>' + count + '/10</b>' + (completed ? ' 🎉' : '');
+    el.classList.add('active');
+}
+
+async function submitScan() {
+    const empInput = document.getElementById('employeeId');
+    const nameInput = document.getElementById('name');
+    const deptInput = document.getElementById('department');
+    const msgBox = document.getElementById('msg');
+
+    const empId = empInput ? empInput.value.trim() : '';
+    const empName = nameInput ? nameInput.value.trim() : '';
+    const empDept = deptInput ? deptInput.value.trim() : '';
+
+    if (!empId || !empName || !empDept) {
+        msgBox.style.display = 'block';
+        msgBox.innerHTML = '⚠️ กรุณากรอกรหัสพนักงาน ชื่อ-นามสกุล และแผนกให้ครบถ้วน';
+        return;
+    }
+
+    const p = {
+        employeeId: empId,
+        name: empName,
+        department: empDept,
+        cat: CAT,
+        token: TOKEN,
+        userAgent: navigator.userAgent
+    };
+    localStorage.setItem('tvop_employeeId', empId);
+    localStorage.setItem('tvop_name', empName);
+    localStorage.setItem('tvop_department', empDept);
+    
+    const b = document.querySelector('.btn');
+    b.disabled = true;
+    b.textContent = 'กำลังจับน้อง...';
+    
+    try {
+        const response = await fetch('/api/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(p)
+        });
+        
+        const r = await response.json();
+        
+        b.disabled = false;
+        b.textContent = 'เก็บ ' + (CAT || 'แมวตัวนี้') + ' 🐾';
+        let m = document.getElementById('msg');
+        m.style.display = 'block';
+        
+        if (!r.ok) {
+            m.innerHTML = '⚠️ ' + r.message;
+            return;
+        }
+        
+        showProgress({ count: r.count, completed: r.completed });
+        
+        const timeStr = r.timestamp ? new Date(r.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
+        m.innerHTML = r.duplicate 
+            ? '😼 น้องตัวนี้ถูกจับไปแล้ว! สแกนซ้ำไม่นับเพิ่ม' 
+            : '✅ เจอ <b>' + r.catName + '</b> แล้ว!<br>เวลา ' + (timeStr || r.timestamp) + (r.completed ? '<br><br>🏆 <b>MISSION COMPLETE!</b><br>คุณตามหาแมวส้มครบ 10 ตัวแล้ว มีสิทธิ์จับฉลากรางวัล' : '');
+        
+        const catImageMap = {
+            'CAT01': '/static/images/1.png',
+            'CAT02': '/static/images/2.png',
+            'CAT03': '/static/images/3.png',
+            'CAT04': '/static/images/4.png',
+            'CAT05': '/static/images/5.png',
+            'CAT06': '/static/images/6.png',
+            'CAT07': '/static/images/7.png',
+            'CAT08': '/static/images/8.png',
+            'CAT09': '/static/images/9.png',
+            'CAT10': '/static/images/10.png'
+        };
+        
+        if (r.catId && catImageMap[r.catId]) {
+            const imgSrc = catImageMap[r.catId];
+            const catDiv = document.querySelector('.cat');
+            if (catDiv) {
+                catDiv.innerHTML = `<img src="${imgSrc}" onclick="toggleFullView(true)" style="width: 100%; border-radius: 20px; margin: 12px 0 16px; cursor: pointer; box-shadow: 0 10px 30px rgba(139,74,0,0.18);" title="แตะเพื่อดูแบบเต็มจอ">`;
+            }
+            // Automatically launch full-page view!
+            showFullView(imgSrc, r.catName, r.count, r.completed);
+        }
+    } catch (e) {
+        b.disabled = false;
+        b.textContent = 'เก็บ ' + (CAT || 'แมวตัวนี้') + ' 🐾';
+        let m = document.getElementById('msg');
+        m.style.display = 'block';
+        m.textContent = 'เกิดข้อผิดพลาด: ' + e.message;
+    }
+}
+</script></body></html>
