@@ -14,6 +14,10 @@ import schemas
 # Ensure tables are created
 models.Base.metadata.create_all(bind=engine)
 
+# Auto-seed cats if database is freshly created
+from seed_cats import seed
+seed()
+
 app = FastAPI()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
