@@ -38,6 +38,13 @@ def read_index(cat: str = "", token: str = ""):
     
     return HTMLResponse(content=html_content)
 
+@app.get("/qrs", response_class=HTMLResponse)
+def get_qrs():
+    if not os.path.exists("print_qrs.html"):
+        return HTMLResponse(content="print_qrs.html not found", status_code=404)
+    with open("print_qrs.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
 @app.get("/api/progress/{employeeId}")
 def get_progress(employeeId: str, db: Session = Depends(get_db)):
     participant = db.query(models.Participant).filter(
@@ -324,7 +331,8 @@ def admin_dashboard():
                 <h1>🐱 HR Cat Hunt <span>Dashboard</span></h1>
                 <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">สรุปข้อมูลผู้เข้าร่วมกิจกรรมและการสแกนทั้งหมด</p>
             </div>
-            <div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/qrs" target="_blank" style="text-decoration: none; background: #10b981; color: white; padding: 10px 18px; border-radius: 12px; font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 6px;">🖨️ ดู QR Codes</a>
                 <button class="refresh-btn" onclick="loadData()">🔄 รีเฟรชข้อมูล</button>
             </div>
         </header>
